@@ -1,5 +1,6 @@
 # FastAPI 관련 import
 from fastapi import FastAPI, HTTPException, File, UploadFile
+from typing import Optional, List
 from pydantic import BaseModel
 from pydub import AudioSegment
 import emergency
@@ -27,9 +28,10 @@ class HospitalRecommendation(BaseModel):
     emergency_number: str
 
 class ResponseData(BaseModel):
-    summary: dict
-    emergency_class: int
-    nearest_hospitals: list[HospitalRecommendation]
+    summary: Optional[dict] = None
+    emergency_class: Optional[int] = None
+    nearest_hospitals: Optional[List[HospitalRecommendation]] = None
+    message: Optional[str] = None # 응급상황이 아닐 경우를 대비
 
 
 # /recommend_hospital GET 요청 처리
@@ -67,13 +69,16 @@ async def get_recommend_hospital(text: str, latitude: float, longitude: float):
         result = {
             "summary": summary_result,
             "emergency_class": predicted_class + 1,
-            "probabilities": probabilities.tolist(),
-            "nearest_hospitals": hospital_df.to_dict(orient='records')
+            "nearest_hospitals": hospital_df.to_dict(orient='records'),
+            "message": "응급 상황입니다."
         }
     
         return result
     else:
         result = {
+            "summary": {},  # 또는 None
+            "emergency_class": predicted_class + 1, # 또는 None, 상황에 맞게
+            "nearest_hospitals": [],  # 빈 리스트
             "message": "응급 상황이 아닙니다."
         }
         return result
